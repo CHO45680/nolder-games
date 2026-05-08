@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도형 덧셈 게임 🔷</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:#ffffff;}
+body{font-family:'Noto Sans KR',sans-serif;display:flex;height:100vh;}
+
+/* 단계 선택 화면 */
+.level-screen{
+  position:fixed;inset:0;background:#ffffff;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:24px;z-index:200;
+}
+.level-screen.hide{display:none;}
+.level-title{font-size:clamp(28px,4vw,48px);font-weight:900;color:#111111;text-align:center;}
+.level-sub{font-size:clamp(14px,2vw,20px);color:#555;text-align:center;}
+.level-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:0 20px;}
+.level-card{
+  width:clamp(180px,22vw,260px);
+  border-radius:20px;border:4px solid #111111;
+  padding:24px 16px;text-align:center;
+  cursor:pointer;transition:all 0.15s;
+  background:#ffffff;
+}
+.level-card:hover{transform:scale(1.04);}
+.level-card:active{transform:scale(0.97);}
+.level-card.lv1{border-color:#cc0000;}
+.level-card.lv2{border-color:#0000cc;}
+.level-card.lv3{border-color:#007700;}
+.level-card.lv1:hover{background:#fff0f0;}
+.level-card.lv2:hover{background:#f0f0ff;}
+.level-card.lv3:hover{background:#f0fff0;}
+.lv-num{font-size:clamp(36px,5vw,56px);font-weight:900;margin-bottom:8px;}
+.lv1 .lv-num{color:#cc0000;}
+.lv2 .lv-num{color:#0000cc;}
+.lv3 .lv-num{color:#007700;}
+.lv-name{font-size:clamp(18px,2.5vw,26px);font-weight:900;color:#111111;margin-bottom:6px;}
+.lv-desc{font-size:clamp(12px,1.6vw,16px);color:#555;line-height:1.5;}
+
+.game-area{flex:1;display:flex;flex-direction:column;padding:12px 8px 8px 12px;gap:10px;}
+
+.key-row{
+  display:flex;gap:0;background:#ffffff;border-radius:14px;
+  border:3px solid #111111;overflow:hidden;
+}
+.key-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:4px;padding:8px 4px;
+  border-right:2px solid #cccccc;
+}
+.key-item:last-child{border-right:none;}
+.key-num{font-size:clamp(16px,2.5vw,28px);font-weight:900;color:#cc0000;}
+
+.prob-area{
+  flex:1;display:flex;flex-direction:column;
+  justify-content:space-evenly;
+  background:#ffffff;border-radius:14px;
+  border:3px solid #111111;padding:12px 16px;
+}
+.prob-row{
+  flex:1;display:flex;align-items:center;
+  justify-content:center;
+  gap:clamp(6px,2vw,20px);max-height:50%;
+}
+.shape-box{
+  flex-shrink:0;background:#ffffff;
+  border-radius:clamp(10px,2vw,18px);
+  border:3px solid #111111;
+  display:flex;align-items:center;justify-content:center;
+}
+.op{font-size:clamp(28px,5vw,60px);font-weight:900;color:#111111;flex-shrink:0;}
+.ans-box{
+  flex-shrink:0;border-radius:clamp(10px,2vw,18px);
+  background:#ffffff;border:4px solid #111111;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(36px,6vw,80px);font-weight:900;color:#111111;transition:all 0.4s;
+}
+.ans-box.revealed{background:#fff0f0;border-color:#cc0000;color:#cc0000;}
+
+.side{width:clamp(140px,18vw,220px);display:flex;flex-direction:column;padding:10px 10px 10px 4px;gap:8px;}
+.team-card{flex:1;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:4px solid transparent;transition:all 0.3s;padding:6px;}
+.team-card.a{background:#ffeeee;border-color:#cc0000;}
+.team-card.b{background:#eeeeff;border-color:#0000cc;}
+.team-card.a.winner{border-color:#cc0000;box-shadow:0 0 20px rgba(204,0,0,0.5);}
+.team-card.b.winner{border-color:#0000cc;box-shadow:0 0 20px rgba(0,0,204,0.5);}
+.team-card.active-turn.a{background:#cc0000;border-color:#990000;}
+.team-card.active-turn.b{background:#0000cc;border-color:#000099;}
+.t-name{font-size:clamp(16px,2.5vw,26px);font-weight:900;}
+.team-card.a .t-name{color:#cc0000;}.team-card.b .t-name{color:#0000cc;}
+.team-card.active-turn .t-name{color:white!important;}
+.t-score{font-size:clamp(44px,7vw,88px);font-weight:900;color:#111111;line-height:1;}
+.team-card.active-turn .t-score{color:white;}
+.t-bonus{font-size:clamp(11px,1.5vw,16px);font-weight:700;color:#666;min-height:18px;}
+.team-card.active-turn .t-bonus{color:rgba(255,255,255,0.8);}
+.t-turn{font-size:clamp(10px,1.4vw,15px);font-weight:700;color:transparent;min-height:16px;}
+.team-card.active-turn .t-turn{color:white;}
+
+.ctrl-area{display:flex;flex-direction:column;gap:6px;align-items:stretch;}
+.round-badge{text-align:center;font-size:clamp(12px,1.8vw,17px);font-weight:700;color:#111111;background:white;border-radius:999px;padding:4px 8px;border:2px solid #111111;}
+.level-badge{text-align:center;font-size:clamp(11px,1.5vw,15px);font-weight:700;border-radius:999px;padding:3px 8px;border:2px solid;}
+.level-badge.lv1{color:#cc0000;border-color:#cc0000;background:#fff0f0;}
+.level-badge.lv2{color:#0000cc;border-color:#0000cc;background:#f0f0ff;}
+.level-badge.lv3{color:#007700;border-color:#007700;background:#f0fff0;}
+.btn{padding:clamp(10px,1.5vh,16px) 8px;border-radius:12px;border:none;font-size:clamp(15px,2vw,20px);font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.15s;text-align:center;width:100%;}
+.btn:hover{transform:scale(1.02);}.btn:active{transform:scale(0.97);}
+.btn-start{background:#1DD1A1;color:white;}
+.btn-reveal{background:#FF9F43;color:white;}
+.btn-correct{background:#22bb55;color:white;}
+.btn-wrong{background:#FF4444;color:white;}
+.btn-next{background:#FECA57;color:#1a1a2e;}
+.btn-reset{background:#eeeeee;color:#111111;font-size:clamp(12px,1.5vw,16px);border:2px solid #999999;}
+.btn-level{background:#ffffff;color:#111111;font-size:clamp(11px,1.4vw,14px);border:2px solid #999999;}
+
+.judge-area{display:none;flex-direction:column;gap:5px;background:white;border-radius:12px;padding:8px;border:2px solid #111111;text-align:center;}
+.judge-area.show{display:flex;}
+.judge-q{font-size:clamp(12px,1.6vw,16px);font-weight:700;color:#111111;}
+.judge-ans{font-size:clamp(13px,1.8vw,17px);color:#cc0000;font-weight:900;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:100;}
+.overlay.show{display:flex;}
+.result-box{background:white;border:6px solid #cc0000;border-radius:28px;padding:40px 60px;text-align:center;animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes popIn{from{transform:scale(0.3);opacity:0}to{transform:scale(1);opacity:1}}
+.result-box h2{font-size:clamp(36px,5vw,56px);font-weight:900;margin-bottom:12px;color:#111111;}
+.result-box p{font-size:clamp(18px,2.5vw,26px);color:#333333;margin-bottom:20px;}
+.final-sc{display:flex;gap:40px;justify-content:center;margin-bottom:24px;}
+.fs-t{font-size:18px;font-weight:900;margin-bottom:4px;}
+.fs-t.a{color:#cc0000;}.fs-t.b{color:#0000cc;}
+.fs-n{font-size:clamp(48px,7vw,72px);font-weight:900;color:#111111;}
+.result-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.score-float{position:fixed;font-size:44px;font-weight:900;pointer-events:none;z-index:999;animation:floatUp 1.2s ease-out forwards;}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-100px) scale(1.4);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- 단계 선택 화면 -->
+<div class="level-screen" id="levelScreen">
+  <div class="level-title">🔷 도형 덧셈 게임</div>
+  <div class="level-sub">단계를 선택하세요</div>
+  <div class="level-cards">
+    <div class="level-card lv1" onclick="selectLevel(1)">
+      <div class="lv-num">1단계</div>
+      <div class="lv-name">🟢 쉬움</div>
+      <div class="lv-desc">도형 2개 더하기<br>합이 <b>10 이하</b></div>
+    </div>
+    <div class="level-card lv2" onclick="selectLevel(2)">
+      <div class="lv-num">2단계</div>
+      <div class="lv-name">🔵 보통</div>
+      <div class="lv-desc">도형 2개 더하기<br>합이 <b>10 초과</b></div>
+    </div>
+    <div class="level-card lv3" onclick="selectLevel(3)">
+      <div class="lv-num">3단계</div>
+      <div class="lv-name">🟢 어려움</div>
+      <div class="lv-desc">도형 3개 더하기<br>합이 <b>10 이하</b></div>
+    </div>
+  </div>
+</div>
+
+<div class="game-area">
+  <div class="key-row" id="keyRow"></div>
+  <div class="prob-area" id="probArea">
+    <div style="display:flex;align-items:center;justify-content:center;flex:1;font-size:clamp(20px,3vw,36px);font-weight:700;color:#333333;">▶ 오른쪽 시작 버튼을 눌러주세요</div>
+  </div>
+</div>
+
+<div class="side">
+  <div class="team-card a active-turn" id="cardA">
+    <div class="t-turn">← 이번 차례!</div>
+    <div class="t-name">🔴 A 팀</div>
+    <div class="t-score" id="scA">0</div>
+    <div class="t-bonus" id="bonA">점</div>
+  </div>
+  <div class="team-card b" id="cardB">
+    <div class="t-turn">← 이번 차례!</div>
+    <div class="t-name">🔵 B 팀</div>
+    <div class="t-score" id="scB">0</div>
+    <div class="t-bonus" id="bonB">점</div>
+  </div>
+  <div class="ctrl-area">
+    <div class="round-badge" id="roundBadge">라운드 1 / 8</div>
+    <div class="level-badge lv1" id="levelBadge">1단계 · 합 10이하</div>
+    <div class="judge-area" id="judgeArea">
+      <div class="judge-q" id="judgeQ">답을 들어보세요!</div>
+      <button class="btn btn-reveal" id="revealBtn">🔍 정답 보기</button>
+      <div id="judgeConfirm" style="display:none;flex-direction:column;gap:5px;">
+        <div class="judge-ans" id="judgeAns"></div>
+        <button class="btn btn-correct" id="okBtn">⭕ 정답!</button>
+        <button class="btn btn-wrong" id="noBtn">❌ 틀림</button>
+      </div>
+    </div>
+    <button class="btn btn-start" id="startBtn">▶ 시작</button>
+    <button class="btn btn-next" id="nextBtn" style="display:none">다음 ▶</button>
+    <button class="btn btn-reset" id="resetBtn">🔄 초기화</button>
+    <button class="btn btn-level" id="levelBtn">📋 단계 변경</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="result-box">
+    <h2 id="resTitle">🏆</h2>
+    <p id="resSub"></p>
+    <div class="final-sc">
+      <div><div class="fs-t a">A 팀</div><div class="fs-n" id="finA">0</div></div>
+      <div><div class="fs-t b">B 팀</div><div class="fs-n" id="finB">0</div></div>
+    </div>
+    <div class="result-btns">
+      <button class="btn btn-start" style="font-size:clamp(16px,2vw,22px);border-radius:999px;padding:12px 24px;" id="againBtn">🔷 다시 하기</button>
+      <button class="btn btn-level" style="font-size:clamp(16px,2vw,22px);border-radius:999px;padding:12px 24px;" id="changeLvBtn">📋 단계 변경</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHAPES=[
+  {n:1,color:'#FF6B9D',svg:`<polygon points="50,8 92,88 8,88" fill="#FF6B9D"/>`},
+  {n:2,color:'#FECA57',svg:`<polygon points="50,4 96,36 78,92 22,92 4,36" fill="#FECA57"/>`},
+  {n:3,color:'#FF9F43',svg:`<circle cx="50" cy="50" r="44" fill="#FF9F43"/>`},
+  {n:4,color:'#A29BFE',svg:`<polygon points="50,6 94,34 94,66 50,94 6,66 6,34" fill="#A29BFE"/>`},
+  {n:5,color:'#636e72',svg:`<path d="M20,20 L50,4 L80,20 L96,50 L80,80 L50,96 L20,80 L4,50 Z" fill="#636e72"/>`},
+  {n:6,color:'#6C5CE7',svg:`<polygon points="50,4 96,50 50,96 4,50" fill="#6C5CE7"/>`},
+  {n:7,color:'#00CEC9',svg:`<polygon points="50,4 64,36 100,36 72,58 82,96 50,74 18,96 28,58 0,36 36,36" fill="#00CEC9"/>`},
+  {n:8,color:'#00B894',svg:`<polygon points="30,4 70,4 96,30 96,70 70,96 30,96 4,70 4,30" fill="#00B894"/>`},
+  {n:9,color:'#FF7675',svg:`<rect x="4" y="28" width="92" height="44" rx="22" fill="#FF7675"/>`},
+];
+
+const TOTAL=8;
+let sc={A:0,B:0},team='A',round=0,probs=[];
+let currentLevel=1;
+
+const LEVEL_INFO={
+  1:{name:'1단계 · 합 10이하', cls:'lv1'},
+  2:{name:'2단계 · 합 10초과', cls:'lv2'},
+  3:{name:'3단계 · 도형3개', cls:'lv3'},
+};
+
+function selectLevel(lv){
+  currentLevel=lv;
+  document.getElementById('levelScreen').classList.add('hide');
+  const badge=document.getElementById('levelBadge');
+  badge.textContent=LEVEL_INFO[lv].name;
+  badge.className='level-badge '+LEVEL_INFO[lv].cls;
+  resetAll();
+}
+
+let AC=null;
+function getAC(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();return AC;}
+function fanfare(){
+  const c=getAC();
+  [[392,0],[523,0.13],[659,0.25],[784,0.38],[1047,0.50]].forEach(([f,t])=>{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type='sawtooth';o.frequency.value=f;
+    g.gain.setValueAtTime(0,c.currentTime+t);g.gain.linearRampToValueAtTime(0.4,c.currentTime+t+0.03);
+    g.gain.linearRampToValueAtTime(0,c.currentTime+t+0.22);
+    o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+0.25);
+  });
+}
+function wrongSnd(){
+  const c=getAC(),o=c.createOscillator(),g=c.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(220,c.currentTime);
+  o.frequency.linearRampToValueAtTime(80,c.currentTime+0.3);
+  g.gain.setValueAtTime(0.3,c.currentTime);g.gain.linearRampToValueAtTime(0,c.currentTime+0.3);
+  o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+0.3);
+}
+
+function shapeSVG(s,size){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${s.svg}</svg>`;
+}
+
+function buildKey(){
+  const row=document.getElementById('keyRow');
+  row.innerHTML='';
+  const sz=Math.min(Math.floor(window.innerHeight*0.09),Math.floor(window.innerWidth*0.065));
+  SHAPES.forEach(s=>{
+    const item=document.createElement('div');item.className='key-item';
+    item.innerHTML=`${shapeSVG(s,sz)}<div class="key-num">${s.n}</div>`;
+    row.appendChild(item);
+  });
+}
+
+function getRandomShapes(count, maxSum, minSum){
+  let attempts=0;
+  while(attempts<200){
+    attempts++;
+    const indices=[];
+    for(let i=0;i<count;i++) indices.push(~~(Math.random()*9));
+    const sum=indices.reduce((a,i)=>a+SHAPES[i].n,0);
+    if(sum>=minSum && sum<=maxSum){
+      return {shapes:indices.map(i=>SHAPES[i]), ans:sum};
+    }
+  }
+  // fallback
+  if(count===2) return {shapes:[SHAPES[0],SHAPES[1]],ans:3};
+  return {shapes:[SHAPES[0],SHAPES[1],SHAPES[2]],ans:6};
+}
+
+function genProbs(){
+  const p=[];
+  for(let i=0;i<2;i++){
+    let prob;
+    if(currentLevel===1){
+      prob=getRandomShapes(2,10,2);
+    } else if(currentLevel===2){
+      prob=getRandomShapes(2,18,11);
+    } else {
+      prob=getRandomShapes(3,10,3);
+    }
+    p.push(prob);
+  }
+  return p;
+}
+
+function renderProbs(p,showAns){
+  const area=document.getElementById('probArea');
+  area.innerHTML='';
+  const availH=area.offsetHeight||300;
+  const count=p[0].shapes.length;
+  const sz=Math.min(
+    Math.floor((availH-40)/2)-14,
+    Math.floor(window.innerWidth*(count===3?0.09:0.13))
+  );
+
+  p.forEach((prob)=>{
+    const row=document.createElement('div');row.className='prob-row';
+    prob.shapes.forEach((s,j)=>{
+      if(j>0){const op=document.createElement('div');op.className='op';op.textContent='+';row.appendChild(op);}
+      const box=document.createElement('div');
+      box.className='shape-box';
+      box.style.cssText=`width:${sz}px;height:${sz}px;`;
+      box.innerHTML=shapeSVG(s,Math.round(sz*0.78));
+      row.appendChild(box);
+    });
+    const eq=document.createElement('div');eq.className='op';eq.textContent='=';row.appendChild(eq);
+    const ans=document.createElement('div');
+    ans.className='ans-box'+(showAns?' revealed':'');
+    ans.style.cssText=`width:${sz}px;height:${sz}px;`;
+    ans.textContent=showAns?prob.ans:'';
+    row.appendChild(ans);
+    area.appendChild(row);
+  });
+}
+
+function updateTurnUI(){
+  ['A','B'].forEach(t=>{
+    document.getElementById('card'+t).classList.toggle('active-turn',t===team);
+  });
+}
+
+function startRound(){
+  if(round>=TOTAL){showResult();return;}
+  document.getElementById('judgeArea').classList.remove('show');
+  document.getElementById('judgeConfirm').style.display='none';
+  document.getElementById('revealBtn').style.display='';
+  document.getElementById('nextBtn').style.display='none';
+  document.getElementById('startBtn').style.display='none';
+  probs=genProbs();
+  document.getElementById('roundBadge').textContent=`라운드 ${round+1} / ${TOTAL}`;
+  updateTurnUI();
+  renderProbs(probs,false);
+  setTimeout(()=>{
+    document.getElementById('judgeQ').textContent=(team==='A'?'🔴 A팀':'🔵 B팀')+' 답을 들어보세요!';
+    document.getElementById('judgeAns').textContent='정답: '+probs.map(p=>p.ans).join('번,  ')+'번';
+    document.getElementById('judgeArea').classList.add('show');
+  },300);
+}
+
+function judge(ok){
+  document.getElementById('judgeArea').classList.remove('show');
+  document.getElementById('judgeConfirm').style.display='none';
+  if(ok){
+    sc[team]+=10;
+    const el=document.getElementById('sc'+team);
+    el.style.transform='scale(1.4)';setTimeout(()=>el.style.transform='',300);
+    document.getElementById('bon'+team).textContent='+10점!';
+    setTimeout(()=>document.getElementById('bon'+team).textContent='점',2000);
+    updateScores();spawnFloat('+10',team);fanfare();
+  } else wrongSnd();
+  round++;team=team==='A'?'B':'A';
+  updateTurnUI();
+  if(round>=TOTAL){setTimeout(showResult,900);return;}
+  document.getElementById('nextBtn').style.display='';
+}
+
+function updateScores(){
+  ['A','B'].forEach(t=>{
+    document.getElementById('sc'+t).textContent=sc[t];
+    document.getElementById('card'+t).classList.toggle('winner',sc[t]>sc[t==='A'?'B':'A']);
+  });
+}
+function showResult(){
+  document.getElementById('finA').textContent=sc.A+'점';
+  document.getElementById('finB').textContent=sc.B+'점';
+  const w=sc.A>sc.B?'🔴 A팀 승리!':sc.B>sc.A?'🔵 B팀 승리!':'🤝 무승부!';
+  document.getElementById('resTitle').textContent=w;
+  document.getElementById('resSub').textContent=sc.A===sc.B?'두 팀 모두 훌륭해요! 👏':'수고하셨습니다! 🎉';
+  document.getElementById('overlay').classList.add('show');
+  fanfare();
+}
+function resetAll(){
+  sc={A:0,B:0};team='A';round=0;
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('judgeArea').classList.remove('show');
+  document.getElementById('judgeConfirm').style.display='none';
+  document.getElementById('revealBtn').style.display='';
+  document.getElementById('startBtn').style.display='';
+  document.getElementById('nextBtn').style.display='none';
+  document.getElementById('roundBadge').textContent='라운드 1 / '+TOTAL;
+  ['A','B'].forEach(t=>{
+    document.getElementById('sc'+t).textContent='0';
+    document.getElementById('bon'+t).textContent='점';
+    document.getElementById('card'+t).classList.remove('winner');
+  });
+  document.getElementById('cardA').classList.add('active-turn');
+  document.getElementById('cardB').classList.remove('active-turn');
+  document.getElementById('probArea').innerHTML='<div style="display:flex;align-items:center;justify-content:center;flex:1;font-size:clamp(20px,3vw,36px);font-weight:700;color:#333333;">▶ 오른쪽 시작 버튼을 눌러주세요</div>';
+}
+function spawnFloat(txt,t){
+  const el=document.createElement('div');el.className='score-float';
+  el.textContent=txt;el.style.color=t==='A'?'#cc0000':'#0000cc';
+  const box=document.getElementById('card'+t).getBoundingClientRect();
+  el.style.left=(box.left+box.width/2-20)+'px';el.style.top=(box.top+10)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1300);
+}
+
+function goLevelSelect(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('levelScreen').classList.remove('hide');
+}
+
+document.getElementById('startBtn').addEventListener('click',startRound);
+document.getElementById('nextBtn').addEventListener('click',startRound);
+document.getElementById('revealBtn').addEventListener('click',()=>{
+  renderProbs(probs,true);
+  document.getElementById('judgeConfirm').style.display='flex';
+  document.getElementById('revealBtn').style.display='none';
+});
+document.getElementById('okBtn').addEventListener('click',()=>judge(true));
+document.getElementById('noBtn').addEventListener('click',()=>judge(false));
+document.getElementById('resetBtn').addEventListener('click',resetAll);
+document.getElementById('againBtn').addEventListener('click',resetAll);
+document.getElementById('levelBtn').addEventListener('click',goLevelSelect);
+document.getElementById('changeLvBtn').addEventListener('click',goLevelSelect);
+
+buildKey();
+window.addEventListener('resize',()=>{buildKey();if(probs.length)renderProbs(probs,false);});
+</script>
+</body>
+</html>
